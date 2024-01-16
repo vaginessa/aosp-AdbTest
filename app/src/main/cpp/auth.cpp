@@ -45,19 +45,17 @@ namespace adb {
         }
 
         bool GenerateKey(const std::string &file) {
-            LOGD("generate_key(%s)", file.c_str());
-
-            bssl::UniquePtr<EVP_PKEY> pkey(EVP_PKEY_new());
+            bssl::UniquePtr<EVP_PKEY> private_key(EVP_PKEY_new());
             bssl::UniquePtr<BIGNUM> exponent(BN_new());
             bssl::UniquePtr<RSA> rsa(RSA_new());
-            if (!pkey || !exponent || !rsa) {
+            if (!private_key || !exponent || !rsa) {
                 LOGE("Failed to allocate key");
                 return false;
             }
 
             BN_set_word(exponent.get(), RSA_F4);
             RSA_generate_key_ex(rsa.get(), 2048, exponent.get(), nullptr);
-            EVP_PKEY_set1_RSA(pkey.get(), rsa.get());
+            EVP_PKEY_set1_RSA(private_key.get(), rsa.get());
 
             std::string pubkey;
             if (!CalculatePublicKey(&pubkey, rsa.get())) {
@@ -77,7 +75,7 @@ namespace adb {
 
             umask(old_mask);
 
-            if (!PEM_write_PrivateKey(f.get(), pkey.get(), nullptr, nullptr, 0, nullptr,
+            if (!PEM_write_PrivateKey(f.get(), private_key.get(), nullptr, nullptr, 0, nullptr,
                                       nullptr)) {
                 LOGE("Failed to write key");
                 return false;
@@ -142,12 +140,12 @@ namespace adb {
         std::string SignToken(std::string &file, const char *token, size_t token_size) {
             std::shared_ptr<RSA> private_key = ReadKeyFile(file);
             if (!private_key) {
-                return nullptr;
+                return std::string();
             }
 
             if (token_size != TOKEN_SIZE) {
                 LOGD("Unexpected token size %zd", token_size);
-                return nullptr;
+                return std::string();
             }
 
             std::string result;

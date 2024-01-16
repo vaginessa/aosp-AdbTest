@@ -150,6 +150,17 @@ public class AdbMessage {
         return new String(bytes);
     }
 
+    private static int checksum(byte[] data) {
+        int result = 0;
+        for (int b : data) {
+            int x = b;
+            // dang, no unsigned ints in java
+            if (x < 0) x += 256;
+            result += x;
+        }
+        return result;
+    }
+
     @NonNull
     @Override
     public String toString() {
@@ -158,17 +169,6 @@ public class AdbMessage {
         String result = "Adb Message: " + commandName + " arg0: " + getArg0() + " arg1: " + getArg1() + " dataLength: " + dataLength;
         if (dataLength > 0) {
             result += (" data: \"" + getDataString() + "\"");
-        }
-        return result;
-    }
-
-    private static int checksum(byte[] data) {
-        int result = 0;
-        for (int b : data) {
-            int x = b;
-            // dang, no unsigned ints in java
-            if (x < 0) x += 256;
-            result += x;
         }
         return result;
     }

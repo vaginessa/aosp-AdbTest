@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.22.1)
 project("adb")
 
 add_library(${CMAKE_PROJECT_NAME} SHARED
+        adb_jni.cpp
         adb.cpp
         auth.cpp
         utils.cpp

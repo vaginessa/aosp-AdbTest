@@ -1,16 +1,27 @@
 package dev.rohitverma882.adbtest.adb
 
+import dev.rohitverma882.adbtest.MyApp
+
 import java.io.File
 
-class Adb private constructor(keyFile: File) {
-    private var keyPath = keyFile.absolutePath
+class Adb(app: MyApp) {
+    private val context = app.applicationContext
+    private val filesDir = context.filesDir
+
+    private val authKey = File(filesDir, "adbkey")
+
+    var isRequireSignature: Boolean = true
+
+    fun generateKey(): Boolean {
+        return generateKey(authKey.absolutePath)
+    }
 
     fun getPublicKey(): ByteArray {
-        return getPublicKey(keyPath)
+        return getPublicKey(authKey.absolutePath)
     }
 
     fun signToken(token: ByteArray): ByteArray {
-        return signToken(keyPath, token)
+        return signToken(authKey.absolutePath, token.copyOf())
     }
 
     companion object {
@@ -26,14 +37,5 @@ class Adb private constructor(keyFile: File) {
 
         @JvmStatic
         private external fun signToken(file: String, token: ByteArray): ByteArray
-
-        @JvmStatic
-        fun init(filesDir: File): Adb {
-            val keyFile = File(filesDir, "adbkey")
-            if (!keyFile.exists()) {
-                generateKey(keyFile.absolutePath)
-            }
-            return Adb(keyFile)
-        }
     }
 }

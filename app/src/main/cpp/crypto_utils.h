@@ -28,4 +28,4 @@ bool pubkey_encode(const RSA *key, uint8_t *key_buffer, size_t size);
 } // extern "C"
 #endif
 
-#endif  // ADB_CRYPTO_UTILS_H
+#endif // ADB_CRYPTO_UTILS_H

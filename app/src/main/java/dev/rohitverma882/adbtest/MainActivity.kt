@@ -15,30 +15,25 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
+
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+
 import dev.rohitverma882.adbtest.adb.Adb
-import dev.rohitverma882.adbtest.adb.AdbCrypto
 import dev.rohitverma882.adbtest.adb.AdbDevice
 import dev.rohitverma882.adbtest.adb.UsbReceiver
 import dev.rohitverma882.adbtest.databinding.ActivityMainBinding
-import java.io.File
-
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
 
     private val usbManager by lazy { getSystemService(UsbManager::class.java) }
+    private val adb by lazy { Adb(applicationContext as MyApp) }
 
     private var usbDevice: UsbDevice? = null
     private var usbDeviceConnection: UsbDeviceConnection? = null
     private var usbInterface: UsbInterface? = null
     private var adbDevice: AdbDevice? = null
-
-    private var adbCrypto: AdbCrypto? = null
-    val crypto: AdbCrypto get() = adbCrypto!!
-
-    private lateinit var adb: Adb
 
     private var usbReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -56,7 +51,8 @@ class MainActivity : AppCompatActivity() {
                     if (device != null && filterDevice(device)) {
                         if (usbManager.hasPermission(device)) {
                             log("device added: ${device.deviceName}")
-                            setAdbDevice(device)
+                            val adbInterface = findAdbInterface(device)
+                            setAdbInterface(device, adbInterface)
                         } else {
                             requestUsbPermission(device)
                         }
@@ -75,7 +71,7 @@ class MainActivity : AppCompatActivity() {
                     if (device != null && filterDevice(device)) {
                         if (usbDevice != null && usbDevice?.deviceName == device.deviceName) {
                             log("device removed: ${device.deviceName}")
-                            setAdbDevice(null)
+                            setAdbInterface(null, null)
                         }
                     }
                 }
@@ -102,7 +98,8 @@ class MainActivity : AppCompatActivity() {
                             )
                         ) {
                             log("device added: ${device.deviceName}")
-                            setAdbDevice(device)
+                            val adbInterface = findAdbInterface(device)
+                            setAdbInterface(device, adbInterface)
                         }
                     }
                 }
@@ -120,41 +117,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
         handleUsbIntent(intent)
+        super.onCreate(savedInstanceState)
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         setSupportActionBar(binding.toolbar)
 
-        try {
-            adbCrypto = AdbCrypto.loadAdbKeyPair(
-                File(filesDir, "private_key"), File(
-                    filesDir, "public_key"
-                )
-            )
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-
-        if (adbCrypto == null) {
-            try {
-                adbCrypto = AdbCrypto.generateAdbKeyPair()
-                adbCrypto?.saveAdbKeyPair(
-                    File(filesDir, "private_key"), File(filesDir, "public_key")
-                )
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-
-        adb = Adb.init(filesDir)
+        adb.generateKey()
         log("setup completed")
 
         usbManager.deviceList.values.forEach {
             if (filterDevice(it)) {
                 if (usbManager.hasPermission(it)) {
-                    if (setAdbDevice(it)) {
+                    val adbInterface = findAdbInterface(it)
+                    if (setAdbInterface(it, adbInterface)) {
                         log("device added: ${it.deviceName}")
                         return@forEach
                     }
@@ -204,7 +181,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun handleDeviceOnline(device: AdbDevice) {
         log("device online: " + device.serial)
-        device.openSocket("shell:exec logcat")
+//        device.openSocket("shell:exec logcat")
+        device.openSocket("shell:exec pm")
     }
 
     private fun requestUsbPermission(device: UsbDevice) {
@@ -230,7 +208,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun setAdbDevice(device: UsbDevice?): Boolean {
+    private fun setAdbInterface(device: UsbDevice?, adbInterface: UsbInterface?): Boolean {
         if (usbDeviceConnection != null) {
             if (usbInterface != null) {
                 usbDeviceConnection?.releaseInterface(usbInterface)
@@ -240,21 +218,17 @@ class MainActivity : AppCompatActivity() {
             usbDevice = null
             usbDeviceConnection = null
         }
-
         if (device != null) {
             val connection = usbManager.openDevice(device)
             if (connection != null) {
                 log("open succeeded")
 
-                val adbInterface = findAdbInterface(device)!!
                 if (connection.claimInterface(adbInterface, false)) {
                     log("claim interface succeeded")
-
                     usbDevice = device
                     usbDeviceConnection = connection
                     usbInterface = adbInterface
                     adbDevice = AdbDevice(this, adb, usbDeviceConnection, adbInterface)
-
                     log("call start")
                     adbDevice?.start()
                     return true
@@ -266,7 +240,6 @@ class MainActivity : AppCompatActivity() {
                 log("open failed")
             }
         }
-
         if (usbDeviceConnection == null && adbDevice != null) {
             adbDevice?.stop()
             adbDevice = null
@@ -292,13 +265,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onNewIntent(intent: Intent?) {
-        super.onNewIntent(intent)
         handleUsbIntent(intent)
+        super.onNewIntent(intent)
     }
 
     override fun onDestroy() {
         unregisterReceiver(usbReceiver)
-        setAdbDevice(null)
+        setAdbInterface(null, null)
         super.onDestroy()
     }
 

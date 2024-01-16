@@ -45,12 +45,10 @@ public class AdbDevice {
 
     // list of currently opened sockets
     private final SparseArray<AdbSocket> mSockets = new SparseArray<>();
-
     private int mNextSocketId = 1;
-    private final WaiterThread mWaiterThread = new WaiterThread();
 
-    private Adb mAdb;
-    private boolean sentSignature = false;
+    private final WaiterThread mWaiterThread = new WaiterThread();
+    private final Adb mAdb;
 
     public AdbDevice(MainActivity activity, Adb adb, UsbDeviceConnection connection, UsbInterface adbInterface) {
         mActivity = activity;
@@ -125,6 +123,12 @@ public class AdbDevice {
         connect();
     }
 
+    public void stop() {
+        synchronized (mWaiterThread) {
+            mWaiterThread.mStop = true;
+        }
+    }
+
     public AdbSocket openSocket(String destination) {
         AdbSocket socket;
         synchronized (mSockets) {
@@ -166,10 +170,8 @@ public class AdbDevice {
         }
     }
 
-    public void stop() {
-        synchronized (mWaiterThread) {
-            mWaiterThread.mStop = true;
-        }
+    void log(String s) {
+        mActivity.log(s);
     }
 
     // dispatch a message from the device
@@ -178,22 +180,16 @@ public class AdbDevice {
         switch (command) {
             case AdbMessage.A_AUTH:
                 if (message.getArg0() == AdbMessage.AUTH_TYPE_TOKEN) {
-                    AdbMessage packet = new AdbMessage();
-                    if (sentSignature) {
-//                        byte[] publicKey = null;
-//                        try {
-//                            publicKey = mActivity.getCrypto().getAdbPublicKeyPayload();
-//                        } catch (Throwable ignored) {}
-                        packet.set(AdbMessage.A_AUTH, AdbMessage.AUTH_TYPE_RSA_PUBLIC, 0, mAdb.getPublicKey());
-                    } else {
-//                        byte[] token = null;
-//                        try {
-//                            token = mActivity.getCrypto().signAdbTokenPayload(message.getData().array());
-//                        } catch (Throwable ignored) {}
+                    if (mAdb.isRequireSignature()) {
+                        AdbMessage packet = new AdbMessage();
                         packet.set(AdbMessage.A_AUTH, AdbMessage.AUTH_TYPE_SIGNATURE, 0, mAdb.signToken(message.getData().array()));
-                        sentSignature = true;
+                        packet.write(this);
+                        mAdb.setRequireSignature(false);
+                    } else {
+                        AdbMessage packet = new AdbMessage();
+                        packet.set(AdbMessage.A_AUTH, AdbMessage.AUTH_TYPE_RSA_PUBLIC, 0, mAdb.getPublicKey());
+                        packet.write(this);
                     }
-                    packet.write(this);
                 }
                 break;
             case AdbMessage.A_SYNC:
@@ -214,10 +210,6 @@ public class AdbDevice {
                 }
                 break;
         }
-    }
-
-    void log(String s) {
-        mActivity.log(s);
     }
 
     private class WaiterThread extends Thread {

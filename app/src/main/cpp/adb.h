@@ -9,7 +9,10 @@
 
 #define TOKEN_SIZE 20
 
-constexpr size_t MAX_PAYLOAD_V1 = 4 * 1024;
 constexpr size_t MAX_PAYLOAD = 1024 * 1024;
+
+namespace adb {
+
+} // namespace adb
 
 #endif // ADB_ADB_H
