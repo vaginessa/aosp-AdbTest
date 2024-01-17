@@ -2,11 +2,14 @@ package dev.rohitverma882.adbtest
 
 import android.app.Application
 
+import dev.rohitverma882.adbtest.adb.AdbUtils
+
 import java.io.File
 
 class MyApp : Application() {
     override fun onCreate() {
         super.onCreate()
+        AdbUtils.init(this)
 
         Thread {
             try {

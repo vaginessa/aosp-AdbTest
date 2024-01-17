@@ -12,7 +12,7 @@
 
 using namespace adb;
 
-static jboolean Adb_generateKey(JNIEnv *env, jclass obj, jstring java_file) {
+static jboolean AdbUtils_generateKey(JNIEnv *env, jclass obj, jstring java_file) {
     const char *temp_file = env->GetStringUTFChars(java_file, nullptr);
     std::string file = std::string(temp_file);
 
@@ -31,7 +31,7 @@ static jboolean Adb_generateKey(JNIEnv *env, jclass obj, jstring java_file) {
     return ret;
 }
 
-static jbyteArray Adb_getPublicKey(JNIEnv *env, jclass obj, jstring java_file) {
+static jbyteArray AdbUtils_getPublicKey(JNIEnv *env, jclass obj, jstring java_file) {
     const char *temp_file = env->GetStringUTFChars(java_file, nullptr);
     std::string file = std::string(temp_file);
     std::string key = auth::GetPublicKey(file);
@@ -45,7 +45,7 @@ static jbyteArray Adb_getPublicKey(JNIEnv *env, jclass obj, jstring java_file) {
 }
 
 static jbyteArray
-Adb_signToken(JNIEnv *env, jclass obj, jstring java_file, jbyteArray java_token) {
+AdbUtils_signToken(JNIEnv *env, jclass obj, jstring java_file, jbyteArray java_token) {
     const char *temp_file = env->GetStringUTFChars(java_file, nullptr);
     std::string file = std::string(temp_file);
 
@@ -70,13 +70,13 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
         return JNI_ERR;
     }
 
-    jclass c = env->FindClass("dev/rohitverma882/adbtest/adb/Adb");
+    jclass c = env->FindClass("dev/rohitverma882/adbtest/adb/AdbUtils");
     if (c == nullptr) return JNI_ERR;
 
     static const JNINativeMethod methods[] = {
-            {"generateKey",  "(Ljava/lang/String;)Z",    reinterpret_cast<void *>(Adb_generateKey)},
-            {"getPublicKey", "(Ljava/lang/String;)[B",   reinterpret_cast<void *>(Adb_getPublicKey)},
-            {"signToken",    "(Ljava/lang/String;[B)[B", reinterpret_cast<void *>(Adb_signToken)},
+            {"generateKey",  "(Ljava/lang/String;)Z",    reinterpret_cast<void *>(AdbUtils_generateKey)},
+            {"getPublicKey", "(Ljava/lang/String;)[B",   reinterpret_cast<void *>(AdbUtils_getPublicKey)},
+            {"signToken",    "(Ljava/lang/String;[B)[B", reinterpret_cast<void *>(AdbUtils_signToken)},
     };
 
     int rc = env->RegisterNatives(c, methods, sizeof(methods) / sizeof(JNINativeMethod));

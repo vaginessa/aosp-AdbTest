@@ -48,11 +48,11 @@ public class AdbDevice {
     private int mNextSocketId = 1;
 
     private final WaiterThread mWaiterThread = new WaiterThread();
-    private final Adb mAdb;
 
-    public AdbDevice(MainActivity activity, Adb adb, UsbDeviceConnection connection, UsbInterface adbInterface) {
+    private boolean sentSignature = false;
+
+    public AdbDevice(MainActivity activity, UsbDeviceConnection connection, UsbInterface adbInterface) {
         mActivity = activity;
-        mAdb = adb;
 
         mDeviceConnection = connection;
         mSerial = connection.getSerial();
@@ -180,15 +180,14 @@ public class AdbDevice {
         switch (command) {
             case AdbMessage.A_AUTH:
                 if (message.getArg0() == AdbMessage.AUTH_TYPE_TOKEN) {
-                    if (mAdb.isRequireSignature()) {
-                        AdbMessage packet = new AdbMessage();
-                        packet.set(AdbMessage.A_AUTH, AdbMessage.AUTH_TYPE_SIGNATURE, 0, mAdb.signToken(message.getData().array()));
+                    AdbMessage packet = new AdbMessage();
+                    if (sentSignature) {
+                        packet.set(AdbMessage.A_AUTH, AdbMessage.AUTH_TYPE_RSA_PUBLIC, 0, AdbUtils.getPublicKey());
                         packet.write(this);
-                        mAdb.setRequireSignature(false);
                     } else {
-                        AdbMessage packet = new AdbMessage();
-                        packet.set(AdbMessage.A_AUTH, AdbMessage.AUTH_TYPE_RSA_PUBLIC, 0, mAdb.getPublicKey());
+                        packet.set(AdbMessage.A_AUTH, AdbMessage.AUTH_TYPE_SIGNATURE, 0, AdbUtils.signToken(message.getData().array()));
                         packet.write(this);
+                        sentSignature = true;
                     }
                 }
                 break;

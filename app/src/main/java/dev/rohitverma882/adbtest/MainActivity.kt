@@ -19,7 +19,6 @@ import android.os.Message
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 
-import dev.rohitverma882.adbtest.adb.Adb
 import dev.rohitverma882.adbtest.adb.AdbDevice
 import dev.rohitverma882.adbtest.adb.UsbReceiver
 import dev.rohitverma882.adbtest.databinding.ActivityMainBinding
@@ -28,7 +27,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
 
     private val usbManager by lazy { getSystemService(UsbManager::class.java) }
-    private val adb by lazy { Adb(applicationContext as MyApp) }
 
     private var usbDevice: UsbDevice? = null
     private var usbDeviceConnection: UsbDeviceConnection? = null
@@ -124,7 +122,6 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
         setSupportActionBar(binding.toolbar)
 
-        adb.generateKey()
         log("setup completed")
 
         usbManager.deviceList.values.forEach {
@@ -228,7 +225,7 @@ class MainActivity : AppCompatActivity() {
                     usbDevice = device
                     usbDeviceConnection = connection
                     usbInterface = adbInterface
-                    adbDevice = AdbDevice(this, adb, usbDeviceConnection, adbInterface)
+                    adbDevice = AdbDevice(this, usbDeviceConnection, adbInterface)
                     log("call start")
                     adbDevice?.start()
                     return true

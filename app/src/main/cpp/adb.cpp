@@ -4,8 +4,6 @@
 
 #include "adb.h"
 
-using namespace adb;
-
 namespace adb {
 
 } // namespace adb

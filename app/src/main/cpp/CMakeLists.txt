@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22.1)
-project("adb")
+project("adb_utils")
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -25,17 +25,18 @@ set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} ${LINKER_FLAGS}")
 
 find_library(log-lib log)
 find_package(boringssl REQUIRED CONFIG)
+find_package(cxx REQUIRED CONFIG)
 
-add_library(adb SHARED
-        adb_jni.cpp
+add_library(adb_utils SHARED
+        adb_utils.cpp
         adb.cpp
         auth.cpp
         utils.cpp
         crypto_utils.cpp)
 
-target_link_libraries(adb ${log-lib} boringssl::crypto_static)
+target_link_libraries(adb_utils ${log-lib} boringssl::crypto_static cxx::cxx)
 
 if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
-    add_custom_command(TARGET adb POST_BUILD
-            COMMAND ${CMAKE_STRIP} --remove-section=.comment "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libadb.so")
+    add_custom_command(TARGET adb_utils POST_BUILD
+            COMMAND ${CMAKE_STRIP} --remove-section=.comment "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libadb_utils.so")
 endif ()

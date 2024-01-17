@@ -17,10 +17,10 @@
 #include "crypto_utils.h"
 #include "utils.h"
 
-using namespace adb;
-
 namespace adb {
     namespace auth {
+        using utils::WriteStringToFile;
+
         static bool CalculatePublicKey(std::string *out, RSA *private_key) {
             uint8_t binary_key_data[PUBKEY_ENCODED_SIZE];
             if (!pubkey_encode(private_key, binary_key_data, sizeof(binary_key_data))) {
@@ -81,7 +81,7 @@ namespace adb {
                 return false;
             }
 
-            if (!utils::WriteStringToFile(pubkey, file + ".pub")) {
+            if (!WriteStringToFile(pubkey, file + ".pub")) {
                 PLOGE("failed to write public key");
                 return false;
             }

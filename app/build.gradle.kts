@@ -20,7 +20,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
             cmake {
-                arguments("-DANDROID_STL=c++_static")
+                arguments("-DANDROID_STL=none")
             }
         }
     }
@@ -69,6 +69,7 @@ dependencies {
     implementation(libs.constraintlayout)
 
     implementation(libs.boringssl)
+    implementation(libs.cxx)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.ext.junit)

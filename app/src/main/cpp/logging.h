@@ -8,7 +8,7 @@
 #include <errno.h>
 #include <android/log.h>
 
-#define LOG_TAG    "adb"
+#define LOG_TAG    "adb_utils"
 
 #define LOGD(...)  __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
 #define LOGV(...)  __android_log_print(ANDROID_LOG_VERBOSE, LOG_TAG, __VA_ARGS__)
