@@ -8,6 +8,9 @@
 #include <string>
 #include <unistd.h>
 
+#include <openssl/evp.h>
+#include <openssl/x509v3.h>
+
 #if !defined(O_BINARY)
 #define O_BINARY 0
 #endif
@@ -24,12 +27,20 @@
 #endif
 
 namespace adb {
-    namespace utils {
+    namespace file {
         bool WriteStringToFd(std::string_view content, int fd);
 
         bool WriteStringToFile(const std::string &content, const std::string &path,
                                bool follow_symlinks = false);
-    } // namespace utils
+    } // namespace file
+
+    namespace crypto {
+        bssl::UniquePtr<X509> GenerateX509Certificate(EVP_PKEY *private_key);
+
+        std::string X509ToPEMString(X509 *x509);
+
+        std::string ToPEMString(EVP_PKEY *private_key);
+    } // namespace crypto
 } // namespace adb
 
 #endif // ADB_UTILS_H

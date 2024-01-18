@@ -6,13 +6,13 @@
 #include <string>
 #include <sys/stat.h>
 
-#include "adb.h"
-#include "auth.h"
 #include "logging.h"
+#include "auth.h"
+#include "utils.h"
 
 using namespace adb;
 
-static jboolean AdbUtils_generateKey(JNIEnv *env, jclass obj, jstring java_file) {
+static jboolean AdbUtils_GenerateKey(JNIEnv *env, jclass obj, jstring java_file) {
     const char *temp_file = env->GetStringUTFChars(java_file, nullptr);
     std::string file = std::string(temp_file);
 
@@ -31,7 +31,7 @@ static jboolean AdbUtils_generateKey(JNIEnv *env, jclass obj, jstring java_file)
     return ret;
 }
 
-static jbyteArray AdbUtils_getPublicKey(JNIEnv *env, jclass obj, jstring java_file) {
+static jbyteArray AdbUtils_GetPublicKey(JNIEnv *env, jclass obj, jstring java_file) {
     const char *temp_file = env->GetStringUTFChars(java_file, nullptr);
     std::string file = std::string(temp_file);
     std::string key = auth::GetPublicKey(file);
@@ -44,8 +44,47 @@ static jbyteArray AdbUtils_getPublicKey(JNIEnv *env, jclass obj, jstring java_fi
     return data;
 }
 
+static jbyteArray AdbUtils_GetPrivateKey(JNIEnv *env, jclass obj, jstring java_file) {
+    const char *temp_file = env->GetStringUTFChars(java_file, nullptr);
+    std::string file = std::string(temp_file);
+    auto private_key = auth::GetPrivateKey(file);
+    env->ReleaseStringUTFChars(java_file, temp_file);
+
+    std::string key = crypto::ToPEMString(private_key.get());
+
+    jsize data_size = key.size();
+    jbyteArray data = env->NewByteArray(data_size);
+    env->SetByteArrayRegion(data, 0, data_size,
+                            reinterpret_cast<const jbyte *>(key.data()));
+    return data;
+}
+
+static jbyteArray AdbUtils_GenerateCertificate(JNIEnv *env, jclass obj, jstring java_file) {
+    const char *temp_file = env->GetStringUTFChars(java_file, nullptr);
+    std::string file = std::string(temp_file);
+    auto private_key = auth::GetPrivateKey(file);
+    env->ReleaseStringUTFChars(java_file, temp_file);
+
+    auto x509_certificate = crypto::GenerateX509Certificate(private_key.get());
+
+    std::string certificate;
+    if (!x509_certificate) {
+        LOGE("Unable to create X509 certificate");
+        certificate = "";
+    } else {
+        certificate = crypto::X509ToPEMString(x509_certificate.get());
+    }
+
+    jsize data_size = certificate.size();
+    jbyteArray data = env->NewByteArray(data_size);
+    env->SetByteArrayRegion(data, 0, data_size,
+                            reinterpret_cast<const jbyte *>(certificate.data()));
+    return data;
+}
+
 static jbyteArray
-AdbUtils_signToken(JNIEnv *env, jclass obj, jstring java_file, jbyteArray java_token) {
+AdbUtils_Sign(JNIEnv *env, jclass obj, jstring java_file, jint java_max_payload,
+              jbyteArray java_token) {
     const char *temp_file = env->GetStringUTFChars(java_file, nullptr);
     std::string file = std::string(temp_file);
 
@@ -53,7 +92,8 @@ AdbUtils_signToken(JNIEnv *env, jclass obj, jstring java_file, jbyteArray java_t
     char token[token_size];
     env->GetByteArrayRegion(java_token, 0, token_size, reinterpret_cast<jbyte *>(token));
 
-    std::string signed_token = auth::SignToken(file, token, token_size);
+    size_t max_payload = java_max_payload > 0 ? static_cast<size_t>(java_max_payload) : MAX_PAYLOAD;
+    std::string signed_token = auth::Sign(file, max_payload, token, token_size);
 
     env->ReleaseStringUTFChars(java_file, temp_file);
 
@@ -74,9 +114,11 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
     if (c == nullptr) return JNI_ERR;
 
     static const JNINativeMethod methods[] = {
-            {"generateKey",  "(Ljava/lang/String;)Z",    reinterpret_cast<void *>(AdbUtils_generateKey)},
-            {"getPublicKey", "(Ljava/lang/String;)[B",   reinterpret_cast<void *>(AdbUtils_getPublicKey)},
-            {"signToken",    "(Ljava/lang/String;[B)[B", reinterpret_cast<void *>(AdbUtils_signToken)},
+            {"nativeGenerateKey",         "(Ljava/lang/String;)Z",     reinterpret_cast<void *>(AdbUtils_GenerateKey)},
+            {"nativeGetPublicKey",        "(Ljava/lang/String;)[B",    reinterpret_cast<void *>(AdbUtils_GetPublicKey)},
+            {"nativeGetPrivateKey",       "(Ljava/lang/String;)[B",    reinterpret_cast<void *>(AdbUtils_GetPrivateKey)},
+            {"nativeGenerateCertificate", "(Ljava/lang/String;)[B",    reinterpret_cast<void *>(AdbUtils_GenerateCertificate)},
+            {"nativeSign",                "(Ljava/lang/String;I[B)[B", reinterpret_cast<void *>(AdbUtils_Sign)},
     };
 
     int rc = env->RegisterNatives(c, methods, sizeof(methods) / sizeof(JNINativeMethod));

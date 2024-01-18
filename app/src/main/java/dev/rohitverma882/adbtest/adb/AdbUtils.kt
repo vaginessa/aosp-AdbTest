@@ -3,9 +3,10 @@ package dev.rohitverma882.adbtest.adb
 import android.content.Context
 
 import java.io.File
+import java.lang.ref.WeakReference
 
 object AdbUtils {
-    private lateinit var applicationContext: Context
+    private lateinit var applicationContext: WeakReference<Context>
     private lateinit var adbKey: File
 
     init {
@@ -13,27 +14,48 @@ object AdbUtils {
     }
 
     @JvmStatic
-    private external fun generateKey(file: String): Boolean
+    private external fun nativeGenerateKey(file: String): Boolean
 
     @JvmStatic
-    private external fun getPublicKey(file: String): ByteArray
+    private external fun nativeGetPublicKey(file: String): ByteArray
 
     @JvmStatic
-    private external fun signToken(file: String, token: ByteArray): ByteArray
+    private external fun nativeGetPrivateKey(file: String): ByteArray
+
+    @JvmStatic
+    private external fun nativeGenerateCertificate(file: String): ByteArray
+
+    @JvmStatic
+    private external fun nativeSign(file: String, maxPayload: Int, token: ByteArray): ByteArray
 
     @JvmStatic
     fun init(context: Context) {
-        applicationContext = context.applicationContext
-        adbKey = File(applicationContext.filesDir, "adbkey")
+        applicationContext = WeakReference(context.applicationContext)
 
-        if (!generateKey(adbKey.absolutePath)) {
+        if (applicationContext.get() != null) {
+            adbKey = File(applicationContext.get()!!.filesDir, "adbkey")
+        } else {
+            throw RuntimeException("Failed to init")
+        }
+
+        if (!nativeGenerateKey(adbKey.absolutePath)) {
             throw RuntimeException("Failed to generate adb keys")
         }
     }
 
     @JvmStatic
-    fun getPublicKey(): ByteArray = getPublicKey(adbKey.absolutePath)
+    fun getPublicKey(): ByteArray = nativeGetPublicKey(adbKey.absolutePath)
 
     @JvmStatic
-    fun signToken(token: ByteArray): ByteArray = signToken(adbKey.absolutePath, token.copyOf())
+    fun getPrivateKey(): ByteArray = nativeGetPrivateKey(adbKey.absolutePath)
+
+    @JvmStatic
+    fun generateCertificate(): ByteArray = nativeGenerateCertificate(adbKey.absolutePath)
+
+    @JvmStatic
+    fun sign(maxPayload: Int, token: ByteArray): ByteArray =
+        nativeSign(adbKey.absolutePath, maxPayload, token.copyOf())
+
+    @JvmStatic
+    fun sign(token: ByteArray): ByteArray = nativeSign(adbKey.absolutePath, -1, token.copyOf())
 }

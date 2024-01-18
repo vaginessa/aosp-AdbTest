@@ -45,10 +45,8 @@ public class AdbDevice {
 
     // list of currently opened sockets
     private final SparseArray<AdbSocket> mSockets = new SparseArray<>();
-    private int mNextSocketId = 1;
-
     private final WaiterThread mWaiterThread = new WaiterThread();
-
+    private int mNextSocketId = 1;
     private boolean sentSignature = false;
 
     public AdbDevice(MainActivity activity, UsbDeviceConnection connection, UsbInterface adbInterface) {
@@ -185,7 +183,7 @@ public class AdbDevice {
                         packet.set(AdbMessage.A_AUTH, AdbMessage.AUTH_TYPE_RSA_PUBLIC, 0, AdbUtils.getPublicKey());
                         packet.write(this);
                     } else {
-                        packet.set(AdbMessage.A_AUTH, AdbMessage.AUTH_TYPE_SIGNATURE, 0, AdbUtils.signToken(message.getData().array()));
+                        packet.set(AdbMessage.A_AUTH, AdbMessage.AUTH_TYPE_SIGNATURE, 0, AdbUtils.sign(message.getDataLength(), message.getData().array()));
                         packet.write(this);
                         sentSignature = true;
                     }

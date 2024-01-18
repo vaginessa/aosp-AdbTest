@@ -59,7 +59,7 @@ public class AdbMessage {
         mMessageBuffer.putInt(8, arg1);
         mMessageBuffer.putInt(12, (data == null ? 0 : data.length));
         mMessageBuffer.putInt(16, (data == null ? 0 : checksum(data)));
-        mMessageBuffer.putInt(20, command ^ 0xFFFFFFFF);
+        mMessageBuffer.putInt(20, ~command);
         if (data != null) {
             mDataBuffer.put(data, 0, data.length);
         }

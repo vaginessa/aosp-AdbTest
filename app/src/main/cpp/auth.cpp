@@ -12,14 +12,30 @@
 #include <openssl/rsa.h>
 #include <openssl/pem.h>
 
-#include "adb.h"
 #include "logging.h"
 #include "crypto_utils.h"
 #include "utils.h"
 
 namespace adb {
     namespace auth {
-        using utils::WriteStringToFile;
+        using file::WriteStringToFile;
+
+        static std::shared_ptr<RSA> ReadKeyFile(const std::string &file) {
+            std::unique_ptr<FILE, decltype(&fclose)> fp(fopen(file.c_str(), "r"), fclose);
+            if (!fp) {
+                PLOGE("Failed to open '%s'", file.c_str());
+                return nullptr;
+            }
+
+            RSA *key = RSA_new();
+            if (!PEM_read_RSAPrivateKey(fp.get(), &key, nullptr, nullptr)) {
+                LOGE("Failed to read key from '%s'", file.c_str());
+                ERR_print_errors_fp(stderr);
+                RSA_free(key);
+                return nullptr;
+            }
+            return std::shared_ptr<RSA>(key, RSA_free);
+        }
 
         static bool CalculatePublicKey(std::string *out, RSA *private_key) {
             uint8_t binary_key_data[PUBKEY_ENCODED_SIZE];
@@ -88,34 +104,14 @@ namespace adb {
             return true;
         }
 
-        static std::shared_ptr<RSA> ReadKeyFile(const std::string &file) {
-            std::unique_ptr<FILE, decltype(&fclose)> fp(fopen(file.c_str(), "r"), fclose);
-            if (!fp) {
-                PLOGE("Failed to open '%s'", file.c_str());
-                return nullptr;
-            }
-
-            RSA *key = RSA_new();
-            if (!PEM_read_RSAPrivateKey(fp.get(), &key, nullptr, nullptr)) {
-                LOGE("Failed to read key from '%s'", file.c_str());
-                ERR_print_errors_fp(stderr);
-                RSA_free(key);
-                return nullptr;
-            }
-            return std::shared_ptr<RSA>(key, RSA_free);
-        }
-
-        static bool PublicKeyFromPrivateKey(std::string *out, const std::string &file) {
+        std::string GetPublicKey(std::string &file) {
             std::shared_ptr<RSA> private_key = ReadKeyFile(file);
             if (!private_key) {
-                return false;
+                return "";
             }
-            return CalculatePublicKey(out, private_key.get());
-        }
 
-        std::string GetPublicKey(std::string &file) {
             std::string result;
-            if (!PublicKeyFromPrivateKey(&result, file)) {
+            if (!CalculatePublicKey(&result, private_key.get())) {
                 return "";
             }
             return result;
@@ -137,24 +133,24 @@ namespace adb {
             return private_key;
         }
 
-        std::string SignToken(std::string &file, const char *token, size_t token_size) {
+        std::string Sign(std::string &file, size_t max_payload, const char *token, size_t token_size) {
             std::shared_ptr<RSA> private_key = ReadKeyFile(file);
             if (!private_key) {
-                return std::string();
+                return "";
             }
 
             if (token_size != TOKEN_SIZE) {
                 LOGD("Unexpected token size %zd", token_size);
-                return std::string();
+                return "";
             }
 
             std::string result;
-            result.resize(MAX_PAYLOAD);
+            result.resize(max_payload);
 
             unsigned int len;
             if (!RSA_sign(NID_sha1, reinterpret_cast<const uint8_t *>(token), token_size,
                           reinterpret_cast<uint8_t *>(&result[0]), &len, private_key.get())) {
-                return std::string();
+                return "";
             }
 
             result.resize(len);

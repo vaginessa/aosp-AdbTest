@@ -122,7 +122,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
         setSupportActionBar(binding.toolbar)
 
-        log("setup completed")
+        log("started")
 
         usbManager.deviceList.values.forEach {
             if (filterDevice(it)) {
@@ -273,9 +273,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     companion object {
-        private const val ADB_CLASS = 255
-        private const val ADB_SUBCLASS = 66
-        private const val ADB_PROTOCOL = 1
+        private const val ADB_CLASS = 0xff
+        private const val ADB_SUBCLASS = 0x42
+        private const val ADB_PROTOCOL = 0x1
 
         private const val ACTION_USB_PERMISSION = "adbtest.usb.permission"
 

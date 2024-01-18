@@ -29,9 +29,8 @@ find_package(cxx REQUIRED CONFIG)
 
 add_library(adb_utils SHARED
         adb_utils.cpp
-        adb.cpp
-        auth.cpp
         utils.cpp
+        auth.cpp
         crypto_utils.cpp)
 
 target_link_libraries(adb_utils ${log-lib} boringssl::crypto_static cxx::cxx)

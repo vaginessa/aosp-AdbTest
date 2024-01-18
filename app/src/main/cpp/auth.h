@@ -6,8 +6,13 @@
 #define ADB_AUTH_H
 
 #include <string>
+#include <stddef.h>
 
 #include <openssl/evp.h>
+
+#define TOKEN_SIZE 20
+
+constexpr size_t MAX_PAYLOAD = 1024 * 1024;
 
 namespace adb {
     namespace auth {
@@ -17,7 +22,7 @@ namespace adb {
 
         bssl::UniquePtr<EVP_PKEY> GetPrivateKey(std::string &file);
 
-        std::string SignToken(std::string &file, const char *token, size_t token_size);
+        std::string Sign(std::string &file, size_t max_payload, const char *token, size_t token_size);
     } // namespace auth
 } // namespace adb
 
