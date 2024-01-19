@@ -61,8 +61,8 @@ android {
 }
 
 dependencies {
-    implementation(libs.boringssl)
-    implementation(libs.cxx)
+    compileOnly(libs.boringssl)
+    compileOnly(libs.cxx)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.ext.junit)

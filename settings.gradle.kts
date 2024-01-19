@@ -1,8 +1,5 @@
 @file:Suppress("UnstableApiUsage")
 
-include(":adbutils")
-
-
 pluginManagement {
     repositories {
         google()
@@ -16,8 +13,11 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        maven {
+            url = uri("https://www.jitpack.io")
+        }
     }
 }
 
 rootProject.name = "AdbTest"
-include(":app")
+include(":app", ":adbutils")
