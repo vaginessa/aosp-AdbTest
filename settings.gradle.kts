@@ -1,5 +1,8 @@
 @file:Suppress("UnstableApiUsage")
 
+include(":adbutils")
+
+
 pluginManagement {
     repositories {
         google()

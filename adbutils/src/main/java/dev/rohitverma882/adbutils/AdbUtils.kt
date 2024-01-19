@@ -1,4 +1,4 @@
-package dev.rohitverma882.adbtest.adb
+package dev.rohitverma882.adbutils
 
 import android.content.Context
 
@@ -35,11 +35,11 @@ object AdbUtils {
         if (applicationContext.get() != null) {
             adbKey = File(applicationContext.get()!!.filesDir, "adbkey")
         } else {
-            throw RuntimeException("Failed to init")
+            throw IllegalStateException("Failed to init")
         }
 
         if (!nativeGenerateKey(adbKey.absolutePath)) {
-            throw RuntimeException("Failed to generate adb keys")
+            throw IllegalStateException("Failed to generate adb keys")
         }
     }
 

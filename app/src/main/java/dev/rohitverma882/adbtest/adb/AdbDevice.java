@@ -26,15 +26,14 @@ import android.util.SparseArray;
 import java.util.LinkedList;
 
 import dev.rohitverma882.adbtest.MainActivity;
+import dev.rohitverma882.adbutils.AdbUtils;
 
 /* This class represents a USB device that supports the adb protocol. */
 public class AdbDevice {
     private final MainActivity mActivity;
-
     private final UsbDeviceConnection mDeviceConnection;
     private final UsbEndpoint mEndpointOut;
     private final UsbEndpoint mEndpointIn;
-
     private final String mSerial;
 
     // pool of requests for the OUT endpoint
@@ -45,13 +44,14 @@ public class AdbDevice {
 
     // list of currently opened sockets
     private final SparseArray<AdbSocket> mSockets = new SparseArray<>();
-    private final WaiterThread mWaiterThread = new WaiterThread();
     private int mNextSocketId = 1;
-    private boolean sentSignature = false;
+
+    private final WaiterThread mWaiterThread = new WaiterThread();
+
+    private boolean signatureSent = false;
 
     public AdbDevice(MainActivity activity, UsbDeviceConnection connection, UsbInterface adbInterface) {
         mActivity = activity;
-
         mDeviceConnection = connection;
         mSerial = connection.getSerial();
 
@@ -179,13 +179,13 @@ public class AdbDevice {
             case AdbMessage.A_AUTH:
                 if (message.getArg0() == AdbMessage.AUTH_TYPE_TOKEN) {
                     AdbMessage packet = new AdbMessage();
-                    if (sentSignature) {
+                    if (signatureSent) {
                         packet.set(AdbMessage.A_AUTH, AdbMessage.AUTH_TYPE_RSA_PUBLIC, 0, AdbUtils.getPublicKey());
                         packet.write(this);
                     } else {
                         packet.set(AdbMessage.A_AUTH, AdbMessage.AUTH_TYPE_SIGNATURE, 0, AdbUtils.sign(message.getDataLength(), message.getData().array()));
                         packet.write(this);
-                        sentSignature = true;
+                        signatureSent = true;
                     }
                 }
                 break;

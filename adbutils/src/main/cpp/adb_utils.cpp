@@ -110,7 +110,7 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
         return JNI_ERR;
     }
 
-    jclass c = env->FindClass("dev/rohitverma882/adbtest/adb/AdbUtils");
+    jclass c = env->FindClass("dev/rohitverma882/adbutils/AdbUtils");
     if (c == nullptr) return JNI_ERR;
 
     static const JNINativeMethod methods[] = {

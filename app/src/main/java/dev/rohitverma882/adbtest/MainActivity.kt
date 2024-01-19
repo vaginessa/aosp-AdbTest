@@ -26,7 +26,13 @@ import dev.rohitverma882.adbtest.databinding.ActivityMainBinding
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
 
-    private val usbManager by lazy { getSystemService(UsbManager::class.java) }
+    private val usbManager by lazy {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            getSystemService(UsbManager::class.java)
+        } else {
+            getSystemService(Context.USB_SERVICE) as UsbManager
+        }
+    }
 
     private var usbDevice: UsbDevice? = null
     private var usbDeviceConnection: UsbDeviceConnection? = null
@@ -45,7 +51,6 @@ class MainActivity : AppCompatActivity() {
                         } else {
                             @Suppress("DEPRECATION") intent.getParcelableExtra(UsbManager.EXTRA_DEVICE)
                         }
-
                     if (device != null && filterDevice(device)) {
                         if (usbManager.hasPermission(device)) {
                             log("device added: ${device.deviceName}")
@@ -90,7 +95,6 @@ class MainActivity : AppCompatActivity() {
                             } else {
                                 @Suppress("DEPRECATION") intent.getParcelableExtra(UsbManager.EXTRA_DEVICE)
                             }
-
                         if (device != null && intent.getBooleanExtra(
                                 UsbManager.EXTRA_PERMISSION_GRANTED, false
                             )
@@ -219,7 +223,6 @@ class MainActivity : AppCompatActivity() {
             val connection = usbManager.openDevice(device)
             if (connection != null) {
                 log("open succeeded")
-
                 if (connection.claimInterface(adbInterface, false)) {
                     log("claim interface succeeded")
                     usbDevice = device

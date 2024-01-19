@@ -25,7 +25,6 @@ import java.nio.ByteOrder;
 
 /* This class encapsulates and adb command packet */
 public class AdbMessage {
-    // command names
     public static final int A_SYNC = 0x434e5953;
     public static final int A_CNXN = 0x4e584e43;
     public static final int A_OPEN = 0x4e45504f;
